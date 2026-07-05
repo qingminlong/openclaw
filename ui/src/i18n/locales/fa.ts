@@ -421,12 +421,13 @@ export const fa: TranslationMap = {
   },
   nav: {
     chat: "چت",
-    control: "کنترل",
-    agent: "عامل",
     settings: "تنظیمات",
     expand: "گسترش نوار کناری",
     collapse: "جمع کردن نوار کناری",
     resize: "تغییر اندازه نوار کناری",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

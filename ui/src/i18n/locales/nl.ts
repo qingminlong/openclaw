@@ -422,12 +422,13 @@ export const nl: TranslationMap = {
   },
   nav: {
     chat: "Chat",
-    control: "Control",
-    agent: "Agent",
     settings: "Instellingen",
     expand: "Zijbalk uitvouwen",
     collapse: "Zijbalk samenvouwen",
     resize: "Zijbalkgrootte aanpassen",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

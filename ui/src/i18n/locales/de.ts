@@ -423,12 +423,13 @@ export const de: TranslationMap = {
   },
   nav: {
     chat: "Chat",
-    control: "Steuerung",
-    agent: "Agent",
     settings: "Einstellungen",
     expand: "Seitenleiste ausklappen",
     collapse: "Seitenleiste einklappen",
     resize: "Seitenleiste in der Größe ändern",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

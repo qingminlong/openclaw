@@ -421,12 +421,13 @@ export const pl: TranslationMap = {
   },
   nav: {
     chat: "Czat",
-    control: "Sterowanie",
-    agent: "Agent",
     settings: "Ustawienia",
     expand: "Rozwiń pasek boczny",
     collapse: "Zwiń pasek boczny",
     resize: "Zmień rozmiar paska bocznego",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

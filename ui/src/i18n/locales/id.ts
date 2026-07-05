@@ -420,12 +420,13 @@ export const id: TranslationMap = {
   },
   nav: {
     chat: "Chat",
-    control: "Kontrol",
-    agent: "Agen",
     settings: "Pengaturan",
     expand: "Perluas bilah samping",
     collapse: "Ciutkan bilah samping",
     resize: "Ubah ukuran bilah samping",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

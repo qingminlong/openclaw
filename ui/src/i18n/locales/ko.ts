@@ -419,12 +419,13 @@ export const ko: TranslationMap = {
   },
   nav: {
     chat: "채팅",
-    control: "Control",
-    agent: "에이전트",
     settings: "설정",
     expand: "사이드바 펼치기",
     collapse: "사이드바 접기",
     resize: "사이드바 크기 조절",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

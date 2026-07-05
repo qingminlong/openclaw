@@ -421,12 +421,13 @@ export const es: TranslationMap = {
   },
   nav: {
     chat: "Chat",
-    control: "Control",
-    agent: "Agente",
     settings: "Ajustes",
     expand: "Expandir barra lateral",
     collapse: "Contraer barra lateral",
     resize: "Redimensionar la barra lateral",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

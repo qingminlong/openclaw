@@ -418,12 +418,13 @@ export const th: TranslationMap = {
   },
   nav: {
     chat: "แชต",
-    control: "ควบคุม",
-    agent: "เอเจนต์",
     settings: "การตั้งค่า",
     expand: "ขยายแถบด้านข้าง",
     collapse: "ย่อแถบด้านข้าง",
     resize: "ปรับขนาดแถบด้านข้าง",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

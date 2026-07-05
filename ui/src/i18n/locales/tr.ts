@@ -422,12 +422,13 @@ export const tr: TranslationMap = {
   },
   nav: {
     chat: "Sohbet",
-    control: "Kontrol",
-    agent: "Aracı",
     settings: "Ayarlar",
     expand: "Kenar çubuğunu genişlet",
     collapse: "Kenar çubuğunu daralt",
     resize: "Kenar çubuğunu yeniden boyutlandır",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

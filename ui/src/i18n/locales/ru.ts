@@ -423,12 +423,13 @@ export const ru: TranslationMap = {
   },
   nav: {
     chat: "Чат",
-    control: "Управление",
-    agent: "Агент",
     settings: "Настройки",
     expand: "Развернуть боковую панель",
     collapse: "Свернуть боковую панель",
     resize: "Изменить размер боковой панели",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Терминал",

@@ -421,12 +421,13 @@ export const uk: TranslationMap = {
   },
   nav: {
     chat: "Чат",
-    control: "Керування",
-    agent: "Агент",
     settings: "Налаштування",
     expand: "Розгорнути бічну панель",
     collapse: "Згорнути бічну панель",
     resize: "Змінити розмір бічної панелі",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

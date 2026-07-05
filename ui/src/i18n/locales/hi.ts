@@ -420,12 +420,13 @@ export const hi: TranslationMap = {
   },
   nav: {
     chat: "चैट",
-    control: "नियंत्रण",
-    agent: "एजेंट",
     settings: "सेटिंग्स",
     expand: "साइडबार फैलाएँ",
     collapse: "साइडबार समेटें",
     resize: "साइडबार का आकार बदलें",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "टर्मिनल",

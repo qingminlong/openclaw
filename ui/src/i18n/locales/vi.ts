@@ -420,12 +420,13 @@ export const vi: TranslationMap = {
   },
   nav: {
     chat: "Trò chuyện",
-    control: "Điều khiển",
-    agent: "Agent",
     settings: "Cài đặt",
     expand: "Mở rộng thanh bên",
     collapse: "Thu gọn thanh bên",
     resize: "Thay đổi kích thước thanh bên",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",

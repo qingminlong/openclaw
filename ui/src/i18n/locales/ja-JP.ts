@@ -424,12 +424,13 @@ export const ja_JP: TranslationMap = {
   },
   nav: {
     chat: "チャット",
-    control: "コントロール",
-    agent: "エージェント",
     settings: "設定",
     expand: "サイドバーを展開",
     collapse: "サイドバーを折りたたむ",
     resize: "サイドバーのサイズを変更",
+    more: "More",
+    customize: "Customize sidebar",
+    customizeReset: "Reset to defaults",
   },
   terminal: {
     title: "Terminal",
