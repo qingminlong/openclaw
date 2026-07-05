@@ -22,22 +22,31 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
+// Capture before suspend points; both fields must still match before gateway data reaches UI state.
+internal data class ChatCacheScope(
+  val gatewayId: String,
+  val connectionGeneration: Long,
+)
+
 class ChatController internal constructor(
   private val scope: CoroutineScope,
   private val json: Json,
   private val requestGateway: suspend (method: String, paramsJson: String?) -> String,
   private val transcriptCache: ChatTranscriptCache? = null,
+  private val cacheScope: () -> ChatCacheScope? = { null },
 ) {
-  constructor(
+  internal constructor(
     scope: CoroutineScope,
     session: GatewaySession,
     json: Json,
     transcriptCache: ChatTranscriptCache? = null,
+    cacheScope: () -> ChatCacheScope? = { null },
   ) : this(
     scope = scope,
     json = json,
     requestGateway = { method, paramsJson -> session.request(method, paramsJson) },
     transcriptCache = transcriptCache,
+    cacheScope = cacheScope,
   )
 
   private var appliedMainSessionKey = "main"
@@ -91,6 +100,7 @@ class ChatController internal constructor(
 
   // Drops stale history responses after session switches or refresh races.
   private val historyLoadGeneration = AtomicLong(0)
+  private val gatewayScopeApplyLock = Any()
   private val newChatCreateInFlight = AtomicBoolean(false)
 
   private var lastHealthPollAtMs: Long? = null
@@ -108,6 +118,18 @@ class ChatController internal constructor(
     _streamingAssistantText.value = null
     _historyLoading.value = false
     _sessionId.value = null
+  }
+
+  /** Invalidates and clears gateway-bound UI state before a target switch can race old responses. */
+  fun onGatewayScopeChanging() {
+    synchronized(gatewayScopeApplyLock) {
+      beginHistoryLoad(
+        key = normalizeRequestedSessionKey(_sessionKey.value),
+        clearMessages = true,
+        markLoading = false,
+      )
+      _sessions.value = emptyList()
+    }
   }
 
   /** Loads a chat session, normalizing "main" to the current gateway-provided main session key. */
@@ -229,6 +251,7 @@ class ChatController internal constructor(
   private fun beginHistoryLoad(
     key: String,
     clearMessages: Boolean,
+    markLoading: Boolean = true,
   ): Long {
     val generation = historyLoadGeneration.incrementAndGet()
     _sessionKey.value = key
@@ -244,7 +267,7 @@ class ChatController internal constructor(
     publishPendingToolCalls()
     _streamingAssistantText.value = null
     _sessionId.value = null
-    _historyLoading.value = true
+    _historyLoading.value = markLoading
     if (clearMessages) {
       _messages.value = emptyList()
       _messagesFromCache.value = false
@@ -489,25 +512,36 @@ class ChatController internal constructor(
     generation: Long,
     updateSessionInfo: Boolean,
   ): Boolean {
+    val requestCacheScope = currentCacheScope()
     val historyJson =
       requestGateway(
         "chat.history",
         buildJsonObject { put("sessionKey", JsonPrimitive(sessionKey)) }.toString(),
       )
-    if (!isCurrentHistoryLoad(sessionKey, _sessionKey.value, generation, historyLoadGeneration.get())) return false
     val history = parseHistory(historyJson, sessionKey = sessionKey, previousMessages = _messages.value)
-    if (updateSessionInfo) {
-      updateSessionFromHistory(history)
-    }
-    prunePersistedOptimisticMessages(history.messages)
-    _messagesFromCache.value = false
-    _messages.value = mergeOptimisticMessages(incoming = history.messages, optimistic = optimisticMessagesByRunId.values)
-    _sessionId.value = history.sessionId
-    history.thinkingLevel
-      ?.trim()
-      ?.takeIf { it.isNotEmpty() }
-      ?.let { _thinkingLevel.value = it }
-    persistTranscript(sessionKey, history.messages)
+    val applied =
+      synchronized(gatewayScopeApplyLock) {
+        if (
+          !isCurrentHistoryLoad(sessionKey, _sessionKey.value, generation, historyLoadGeneration.get()) ||
+          requestCacheScope != currentCacheScope()
+        ) {
+          return@synchronized false
+        }
+        if (updateSessionInfo) {
+          updateSessionFromHistory(history)
+        }
+        prunePersistedOptimisticMessages(history.messages)
+        _messagesFromCache.value = false
+        _messages.value = mergeOptimisticMessages(incoming = history.messages, optimistic = optimisticMessagesByRunId.values)
+        _sessionId.value = history.sessionId
+        history.thinkingLevel
+          ?.trim()
+          ?.takeIf { it.isNotEmpty() }
+          ?.let { _thinkingLevel.value = it }
+        true
+      }
+    if (!applied) return false
+    persistTranscript(requestCacheScope, sessionKey, history.messages)
     return true
   }
 
@@ -517,43 +551,55 @@ class ChatController internal constructor(
     generation: Long,
   ) {
     val cache = transcriptCache ?: return
+    val requestCacheScope = currentCacheScope() ?: return
     if (_messages.value.isEmpty()) {
-      val cached = runCatching { cache.loadTranscript(sessionKey) }.getOrDefault(emptyList())
-      if (
-        cached.isNotEmpty() &&
-        _messages.value.isEmpty() &&
-        isCurrentHistoryLoad(sessionKey, _sessionKey.value, generation, historyLoadGeneration.get())
-      ) {
-        _messagesFromCache.value = true
-        _messages.value = cached
+      val cached = runCatching { cache.loadTranscript(requestCacheScope.gatewayId, sessionKey) }.getOrDefault(emptyList())
+      synchronized(gatewayScopeApplyLock) {
+        if (
+          cached.isNotEmpty() &&
+          _messages.value.isEmpty() &&
+          requestCacheScope == currentCacheScope() &&
+          isCurrentHistoryLoad(sessionKey, _sessionKey.value, generation, historyLoadGeneration.get())
+        ) {
+          _messagesFromCache.value = true
+          _messages.value = cached
+        }
       }
     }
     if (_sessions.value.isEmpty()) {
-      val cachedSessions = runCatching { cache.loadSessions() }.getOrDefault(emptyList())
-      if (cachedSessions.isNotEmpty() && _sessions.value.isEmpty()) {
-        _sessions.value = cachedSessions
+      val cachedSessions = runCatching { cache.loadSessions(requestCacheScope.gatewayId) }.getOrDefault(emptyList())
+      synchronized(gatewayScopeApplyLock) {
+        if (cachedSessions.isNotEmpty() && _sessions.value.isEmpty() && requestCacheScope == currentCacheScope()) {
+          _sessions.value = cachedSessions
+        }
       }
     }
   }
 
-  // Write-through happens inline (not via scope.launch) so the cache scope is resolved right
-  // after the live response was applied, minimizing the window where a gateway switch could
-  // re-scope data from the previous gateway. Failures are ignored: the cache is disposable.
+  // Write-through uses the scope captured before the live request. Re-resolving here could put
+  // an old response under a newly selected gateway. Failures are ignored: the cache is disposable.
   private suspend fun persistTranscript(
+    requestCacheScope: ChatCacheScope?,
     sessionKey: String,
     messages: List<ChatMessage>,
   ) {
     val cache = transcriptCache ?: return
-    runCatching { cache.saveTranscript(sessionKey, messages) }
+    val gatewayId = requestCacheScope?.gatewayId ?: return
+    runCatching { cache.saveTranscript(gatewayId, sessionKey, messages) }
   }
 
-  private suspend fun persistSessions(sessions: List<ChatSessionEntry>) {
+  private suspend fun persistSessions(
+    requestCacheScope: ChatCacheScope?,
+    sessions: List<ChatSessionEntry>,
+  ) {
     val cache = transcriptCache ?: return
-    runCatching { cache.saveSessions(sessions) }
+    val gatewayId = requestCacheScope?.gatewayId ?: return
+    runCatching { cache.saveSessions(gatewayId, sessions) }
   }
 
   private suspend fun fetchSessions(limit: Int?) {
     try {
+      val requestCacheScope = currentCacheScope()
       val params =
         buildJsonObject {
           put("includeGlobal", JsonPrimitive(true))
@@ -562,8 +608,14 @@ class ChatController internal constructor(
         }
       val res = requestGateway("sessions.list", params.toString())
       val sessions = parseSessions(res)
-      _sessions.value = sessions
-      persistSessions(sessions)
+      val applied =
+        synchronized(gatewayScopeApplyLock) {
+          if (requestCacheScope != currentCacheScope()) return@synchronized false
+          _sessions.value = sessions
+          true
+        }
+      if (!applied) return
+      persistSessions(requestCacheScope, sessions)
     } catch (_: Throwable) {
       // best-effort
     }
@@ -926,9 +978,16 @@ class ChatController internal constructor(
     // Gateway-side deletes must also purge the offline copy, or the deleted transcript would
     // reappear on the next offline cold open.
     val cache = transcriptCache ?: return
+    val requestCacheScope = currentCacheScope() ?: return
     scope.launch {
-      runCatching { cache.deleteSession(key) }
+      runCatching { cache.deleteSession(requestCacheScope.gatewayId, key) }
     }
+  }
+
+  private fun currentCacheScope(): ChatCacheScope? {
+    val scope = cacheScope() ?: return null
+    val gatewayId = scope.gatewayId.trim().takeIf { it.isNotEmpty() } ?: return null
+    return if (gatewayId == scope.gatewayId) scope else scope.copy(gatewayId = gatewayId)
   }
 
   private fun normalizeThinking(raw: String): String =
