@@ -10,7 +10,7 @@ import {
 // A queued gate block legitimately waits out another full gate run; the
 // 10-minute per-command default in the lock runtime is far too short for that.
 const DEFAULT_GATE_LOCK_TIMEOUT_MS = 2 * 60 * 60 * 1000;
-const PARENT_WATCH_INTERVAL_MS = 2_000;
+const PARENT_WATCH_INTERVAL_MS = 500;
 
 function parseArgs(argv) {
   const args = { statusFile: "" };
