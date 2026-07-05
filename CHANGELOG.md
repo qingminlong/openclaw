@@ -50,6 +50,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- **iOS chat continuity:** restore the active Gateway run and buffered assistant text from history after reconnect, foreground resume, or sequence-gap recovery, including Codex runs without incremental text.
 - **Control UI terminal tabs:** vertically center the new-session button in the terminal tab strip.
 - **Control UI composer scrollbar:** show the message-field scrollbar only when the draft actually overflows its autosized height.
 - **Control UI terminal cursor:** hide the browser-native contenteditable caret so the integrated terminal shows only its canvas-rendered cursor.

@@ -6,6 +6,7 @@ struct ChatProTab: View {
     @Environment(NodeAppModel.self) private var appModel
     @State private var viewModel: OpenClawChatViewModel?
     @State private var viewModelTransportModeID = ""
+    @State private var viewModelAgentID = ""
     let headerLeadingAction: OpenClawSidebarHeaderAction?
     let headerTitle: String?
     let showsAgentBadge: Bool
@@ -42,6 +43,12 @@ struct ChatProTab: View {
             self.syncChatViewModel()
         }
         .onChange(of: self.appModel.chatSessionKey) { _, _ in
+            self.syncChatViewModel()
+        }
+        .onChange(of: self.appModel.chatAgentId) { _, _ in
+            self.syncChatViewModel()
+        }
+        .onChange(of: self.appModel.gatewayDefaultAgentId) { _, _ in
             self.syncChatViewModel()
         }
         .onChange(of: self.appModel.isAppleReviewDemoModeEnabled) { _, _ in
@@ -125,13 +132,16 @@ struct ChatProTab: View {
     }
 
     private func syncChatViewModel() {
-        let sessionKey = self.appModel.chatSessionKey
+        let sessionKey = self.scopedChatSessionKey
         let transportModeID = self.appModel.chatTransportModeID
+        let agentID = self.activeAgentID
         guard let viewModel else {
             self.viewModelTransportModeID = transportModeID
+            self.viewModelAgentID = agentID
             self.viewModel = OpenClawChatViewModel(
                 sessionKey: sessionKey,
                 transport: self.appModel.makeChatTransport(),
+                activeAgentId: agentID,
                 onSessionChanged: { sessionKey in
                     self.appModel.focusChatSession(sessionKey)
                 },
@@ -140,11 +150,13 @@ struct ChatProTab: View {
                 })
             return
         }
-        if self.viewModelTransportModeID != transportModeID {
+        if self.viewModelTransportModeID != transportModeID || self.viewModelAgentID != agentID {
             self.viewModelTransportModeID = transportModeID
+            self.viewModelAgentID = agentID
             self.viewModel = OpenClawChatViewModel(
                 sessionKey: sessionKey,
                 transport: self.appModel.makeChatTransport(),
+                activeAgentId: agentID,
                 onSessionChanged: { sessionKey in
                     self.appModel.focusChatSession(sessionKey)
                 },
@@ -174,6 +186,17 @@ struct ChatProTab: View {
     private var activeAgentID: String {
         self.normalized(self.appModel.chatAgentId)
             ?? "main"
+    }
+
+    private var scopedChatSessionKey: String {
+        let sessionKey = self.appModel.chatSessionKey
+        guard sessionKey.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "global",
+              let selectedAgentID = self.normalized(self.appModel.selectedAgentId),
+              selectedAgentID != self.normalized(self.appModel.gatewayDefaultAgentId)
+        else {
+            return sessionKey
+        }
+        return SessionKey.makeAgentSessionKey(agentId: selectedAgentID, baseKey: "global")
     }
 
     @ViewBuilder
