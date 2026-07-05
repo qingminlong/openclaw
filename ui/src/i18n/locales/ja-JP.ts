@@ -473,6 +473,7 @@ export const ja_JP: TranslationMap = {
     debug: "デバッグ",
     logs: "ログ",
     dreams: "Dreaming",
+    plugin: "Plugin",
   },
   subtitles: {
     agents: "ワークスペース、ツール、ID。",
@@ -498,6 +499,7 @@ export const ja_JP: TranslationMap = {
     debug: "スナップショット、イベント、RPC。",
     logs: "ライブ Gateway ログ。",
     dreams: "スリープ中のメモリ統合。",
+    plugin: "Plugin-provided panel.",
   },
   skillWorkshop: {
     header: {

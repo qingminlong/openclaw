@@ -469,6 +469,7 @@ export const hi: TranslationMap = {
     debug: "डीबग",
     logs: "लॉग्स",
     dreams: "ड्रीमिंग",
+    plugin: "प्लगइन",
   },
   subtitles: {
     agents: "वर्कस्पेस, टूल्स, पहचान।",
@@ -494,6 +495,7 @@ export const hi: TranslationMap = {
     debug: "स्नैपशॉट, इवेंट, RPC।",
     logs: "लाइव gateway लॉग।",
     dreams: "मेमोरी ड्रीमिंग, कंसॉलिडेशन, और रिफ्लेक्शन।",
+    plugin: "Plugin-provided panel.",
   },
   skillWorkshop: {
     header: {

@@ -470,6 +470,7 @@ export const es: TranslationMap = {
     debug: "Depuración",
     logs: "Registros",
     dreams: "Sueños",
+    plugin: "Plugin",
   },
   subtitles: {
     agents: "Gestionar espacios de trabajo, herramientas e identidades de agentes.",
@@ -496,6 +497,7 @@ export const es: TranslationMap = {
     debug: "Instantáneas de la puerta de enlace, eventos y llamadas RPC manuales.",
     logs: "Seguimiento en vivo de los registros de la puerta de enlace.",
     dreams: "Consolidación de la memoria durante el sueño.",
+    plugin: "Plugin-provided panel.",
   },
   skillWorkshop: {
     header: {

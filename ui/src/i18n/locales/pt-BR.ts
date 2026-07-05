@@ -469,6 +469,7 @@ export const pt_BR: TranslationMap = {
     debug: "Depuração",
     logs: "Logs",
     dreams: "Sonhos",
+    plugin: "Plugin",
   },
   subtitles: {
     agents: "Espaços, ferramentas, identidades.",
@@ -494,6 +495,7 @@ export const pt_BR: TranslationMap = {
     debug: "Snapshots, eventos, RPC.",
     logs: "Logs ao vivo do gateway.",
     dreams: "Consolidação de memória durante o sono.",
+    plugin: "Plugin-provided panel.",
   },
   skillWorkshop: {
     header: {

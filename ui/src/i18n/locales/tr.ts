@@ -471,6 +471,7 @@ export const tr: TranslationMap = {
     debug: "Hata Ayıklama",
     logs: "Günlükler",
     dreams: "Düşler",
+    plugin: "Plugin",
   },
   subtitles: {
     agents: "Çalışma alanları, araçlar, kimlikler.",
@@ -497,6 +498,7 @@ export const tr: TranslationMap = {
     debug: "Anlık görüntüler, olaylar, RPC.",
     logs: "Canlı Gateway günlükleri.",
     dreams: "Uyku sırasında bellek birleştirme.",
+    plugin: "Plugin-provided panel.",
   },
   skillWorkshop: {
     header: {
