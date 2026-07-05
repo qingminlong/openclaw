@@ -709,8 +709,8 @@ public final class OpenClawChatViewModel {
            refresh.runSnapshotApplied,
            context.runOwnershipGeneration == self.runOwnershipGeneration,
            !self.isSending,
-           refresh.supportsActiveRunState,
-           !refresh.hasActiveRun
+           refresh.supportsInFlightRunState,
+           !refresh.hasInFlightRun
         {
             self.clearPendingRuns(reason: nil)
             self.pendingToolCallsById = [:]
@@ -1668,10 +1668,10 @@ public final class OpenClawChatViewModel {
                 let historyContext = self.beginHistoryRequest(for: sessionSnapshot)
                 let refresh = await self.refreshHistoryAfterRun(historyRequest: historyContext)
                 guard self.isCurrentSession(sessionSnapshot) else { return }
-                let hasActiveRunSnapshot = refresh.applied &&
+                let hasInFlightRunSnapshot = refresh.applied &&
                     refresh.runSnapshotApplied &&
-                    refresh.hasActiveRun
-                if hasActiveRunSnapshot ||
+                    refresh.hasInFlightRun
+                if hasInFlightRunSnapshot ||
                     !self.clearPendingRunIfAssistantMessagePresent(
                         runId: response.runId,
                         after: userMessageTimestamp)
@@ -2682,8 +2682,8 @@ public final class OpenClawChatViewModel {
         else {
             return false
         }
-        if refresh.applied, refresh.runSnapshotApplied, refresh.supportsActiveRunState {
-            if refresh.hasActiveRun {
+        if refresh.applied, refresh.runSnapshotApplied, refresh.supportsInFlightRunState {
+            if refresh.hasInFlightRun {
                 return true
             }
             self.clearPendingRun(runId)
@@ -2828,7 +2828,7 @@ public final class OpenClawChatViewModel {
 
     @discardableResult
     private func refreshHistoryAfterRun(historyRequest request: HistoryRequest? = nil) async
-        -> (applied: Bool, runSnapshotApplied: Bool, supportsActiveRunState: Bool, hasActiveRun: Bool)
+        -> (applied: Bool, runSnapshotApplied: Bool, supportsInFlightRunState: Bool, hasInFlightRun: Bool)
     {
         let request = request ?? self.beginHistoryRequest()
         do {
@@ -2840,12 +2840,15 @@ public final class OpenClawChatViewModel {
                 for: request,
                 preservingOptimisticLocalMessages: true)
             let hasInFlightRun = Self.normalizedRunID(payload.inFlightRun?.runId) != nil
-            let supportsActiveRunState = hasInFlightRun || payload.sessionInfo?.hasActiveRun != nil
+            // `hasActiveRun` is session-wide and can be true for an embedded agent run.
+            // Its presence capability-gates an authoritative missing chat snapshot, but
+            // only `inFlightRun` establishes ownership of the pending chat run.
+            let supportsInFlightRunState = hasInFlightRun || payload.sessionInfo?.hasActiveRun != nil
             return (
                 applied,
                 applied && runSnapshotApplied,
-                supportsActiveRunState,
-                hasInFlightRun || payload.sessionInfo?.hasActiveRun == true)
+                supportsInFlightRunState,
+                hasInFlightRun)
         } catch {
             chatUILogger.error("refresh history failed \(error.localizedDescription, privacy: .public)")
             return (false, false, false, false)

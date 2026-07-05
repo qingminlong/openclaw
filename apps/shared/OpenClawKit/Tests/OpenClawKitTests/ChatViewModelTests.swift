@@ -5312,31 +5312,7 @@ struct ChatViewModelTests {
         let staleFallbackReleasedCount = AsyncCounter()
         let now = (Date().timeIntervalSince1970 * 1000) + 10000
         let (transport, vm) = await makeViewModel(
-            historyResponses: [
-                historyPayload(sessionKey: "main", sessionId: "sess-main"),
-                historyPayload(
-                    sessionKey: "main",
-                    sessionId: "sess-main-send-refresh",
-                    messages: [chatTextMessage(role: "user", text: "hello", timestamp: now)],
-                    hasActiveRun: true),
-                historyPayload(
-                    sessionKey: "main",
-                    sessionId: "sess-main-stale-fallback",
-                    messages: [chatTextMessage(role: "user", text: "hello", timestamp: now)],
-                    hasActiveRun: true),
-                historyPayload(
-                    sessionKey: "main",
-                    sessionId: "sess-main-newer-empty-refresh",
-                    messages: [chatTextMessage(role: "user", text: "hello", timestamp: now)],
-                    hasActiveRun: true),
-                historyPayload(
-                    sessionKey: "main",
-                    sessionId: "sess-main-next-fallback",
-                    messages: [
-                        chatTextMessage(role: "user", text: "hello", timestamp: now),
-                        chatTextMessage(role: "assistant", text: "reply from later fallback", timestamp: now + 1),
-                    ]),
-            ],
+            historyResponses: [historyPayload(sessionKey: "main", sessionId: "sess-main")],
             requestHistoryHook: { sessionKey in
                 guard sessionKey == "main" else { return }
                 let count = await mainHistoryCount.increment()
@@ -5344,6 +5320,29 @@ struct ChatViewModelTests {
                     await staleFallbackGate.wait()
                     _ = await staleFallbackReleasedCount.increment()
                 }
+            },
+            historyResponseHook: { _, index, sentRunIds in
+                guard let runId = sentRunIds.last else { return nil }
+                if (1 ... 3).contains(index) {
+                    let sessionId = switch index {
+                    case 1: "sess-main-send-refresh"
+                    case 2: "sess-main-stale-fallback"
+                    default: "sess-main-newer-empty-refresh"
+                    }
+                    return historyPayload(
+                        sessionKey: "main",
+                        sessionId: sessionId,
+                        messages: [chatTextMessage(role: "user", text: "hello", timestamp: now)],
+                        inFlightRun: OpenClawChatInFlightRun(runId: runId, text: ""))
+                }
+                guard index == 4 else { return nil }
+                return historyPayload(
+                    sessionKey: "main",
+                    sessionId: "sess-main-next-fallback",
+                    messages: [
+                        chatTextMessage(role: "user", text: "hello", timestamp: now),
+                        chatTextMessage(role: "assistant", text: "reply from later fallback", timestamp: now + 1),
+                    ])
             },
             sendMessageStatus: "pending")
 
@@ -5377,6 +5376,35 @@ struct ChatViewModelTests {
                     }
             }
         }
+    }
+
+    @Test @MainActor func `session activity without chat snapshot does not retain completed pending run`() async throws {
+        let historyCalls = AsyncCounter()
+        let now = (Date().timeIntervalSince1970 * 1000) + 10000
+        let completedHistory = historyPayload(
+            messages: [
+                chatTextMessage(role: "user", text: "hello", timestamp: now),
+                chatTextMessage(role: "assistant", text: "done", timestamp: now + 1),
+            ],
+            hasActiveRun: true)
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [historyPayload(), completedHistory],
+            requestHistoryHook: { _ in _ = await historyCalls.increment() },
+            sendMessageStatus: "pending")
+
+        try await loadAndWaitBootstrap(vm: vm)
+        vm.input = "hello"
+        vm.send()
+        _ = try await waitForLastSentRunId(transport)
+
+        try await waitUntil("completed chat run clears despite unrelated session activity") {
+            let historyCount = await historyCalls.current()
+            let pendingRunCount = await MainActor.run { vm.pendingRunCount }
+            return historyCount >= 2 && pendingRunCount == 0
+        }
+        #expect(vm.messages.contains { message in
+            message.content.contains { $0.text == "done" }
+        })
     }
 
     @Test @MainActor func `stale bootstrap history does not overwrite latest session`() async throws {
