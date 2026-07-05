@@ -43,6 +43,7 @@ import {
   resolvePreferredSessionForAgent,
   resolveSessionAgentFilterOptions,
 } from "../lib/sessions/session-options.ts";
+import { pluginTabKey, pluginTabSearch } from "../pages/plugin/route.ts";
 import { icons, type IconName } from "./icons.ts";
 
 type ProviderQuotaPillRenderer = typeof import("./provider-quota-pill.ts").renderProviderQuotaPill;
@@ -444,9 +445,10 @@ export class AppSidebar extends LitElement {
   }
 
   private renderPluginTab(tab: GatewayControlUiPluginTab) {
-    const search = `?id=${encodeURIComponent(tab.id)}`;
+    const ref = { pluginId: tab.pluginId, id: tab.id };
+    const search = pluginTabSearch(ref);
     const href = `${pathForRoute("plugin", this.basePath)}${search}`;
-    const active = this.activeRouteId === "plugin" && this.activePluginTabId === tab.id;
+    const active = this.activeRouteId === "plugin" && this.activePluginTabId === pluginTabKey(ref);
     const iconName = tab.icon && Object.hasOwn(icons, tab.icon) ? (tab.icon as IconName) : "puzzle";
     const link = html`
       <a
